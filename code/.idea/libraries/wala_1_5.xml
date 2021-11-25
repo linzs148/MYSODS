@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="wala-1.5">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../WALA/wala-1.5.7" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../../WALA/wala-1.5.7" recursive="false" />
+  </library>
+</component>
