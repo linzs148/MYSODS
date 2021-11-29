@@ -19,6 +19,9 @@ public class Test {
 
     public int Test3(int a, int b, int c) {
         int d = Test2(a, b) - Test1(c);
+        for (int i = 0; i < b; ++i) {
+            c++;
+        }
         int e = d % c;
         int f = a + b;
         int g = e / f;

@@ -1,14 +1,18 @@
+# MYSODS
+
+## 相关资源链接
+
 [WALA使用总结](https://github.com/linzs148/SODS/blob/main/resources/WALA%20Guide.md)
 
 [实验报告](https://github.com/linzs148/SODS/blob/main/resources/Experiment%20Report.md)
 
 [实验报告PPT](https://docs.qq.com/slide/DZkJSbVhBeFRvaWVW)
 
-工具展示视频 bilibili
+[工具展示视频](bilibili)
 
 
 
-项目目录结构
+## 项目目录结构
 
 ```
 MYSODS
@@ -19,14 +23,14 @@ MYSODS
 │  ├─src
 │  │  ├─main
 │  │  │  ├─java
-│  │  │  │  MYSODS.java
-│  │  │  └─resources
+│  │  │  │  MYSODS.java // 工具复现代码
+│  │  │  └─resources // wala配置文件
 │  │  │      exclusions.txt
 │  │  │      scope.txt
 │  │  │      wala.properties
 │  │  └─test
 │  │      └─java
-│  │          Test.java
+│  │          Test.java // 工具测试代码
 │  └─target
 │      ├─classes
 │      │   exclusions.txt
@@ -36,17 +40,12 @@ MYSODS
 │      └─test-classes
 │          Test.class
 └─resources
-    │  Experiment Report.md
-    │  Experiment Report.pptx
-    │  WALA Guide.md
-    │  [ASE'16]Supporting_oracle_construction_via_static_analysis.pdf
+    │  Experiment Report.md // 实验报告
+    │  Experiment Report.pptx // 实验报告PPT
+    │  WALA Guide.md // WALA使用总结
+    │  [ASE'16]Supporting_oracle_construction_via_static_analysis.pdf // 工具复现论文
     │  [TSE'14]The_Oracle_Problem_in_Software-A_Survey.pdf
-    ├─images
-    │      ClassHierarchyException.png
-    │      graph.png
-    │      Introduction.png
-    │      maven-wala.png
-    ├─SODS
-    └─WALA
+    ├─images // 相关截图
+    └─WALA // wala jar包
 ```
 

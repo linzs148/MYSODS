@@ -2,9 +2,9 @@
 
 ## 写作目的
 
-WALA作为一款Java源码分析工具给我们提供了许多强大的功能，如类的层次分析、生成调用关系图、中间代码分析等等
+WALA作为一款Java源码分析工具给我们提供了许多强大的功能，如类的层次分析、生成调用关系图、中间代码分析等等。
 
-然而网上关于WALA的学习资料非常少，所以我想通过这篇文章来总结一下WALA最基本的用法，并把我收集到的一些资料通过链接的方式分享给大家，一来算是对于自动化测试工具复现的一部分工作总结，二来也是希望学弟学妹们后续如果选择源码分析方向的工具复现可以参照这篇文章来学习WALA，也算是一种传承吧哈哈哈哈哈哈。
+然而网上关于WALA的学习资料非常少，所以我想通过这篇文章来总结一下WALA最基本的用法，并把我收集到的一些资料通过链接的方式分享给大家，一来算是对于自动化测试工具复现的一部分工作总结，二来也是希望学弟学妹们后续如果选择源码分析方向的工具复现可以参照这篇文章来学习WALA，也算是一种传承吧。
 
 
 
@@ -14,7 +14,7 @@ WALA作为一款Java源码分析工具给我们提供了许多强大的功能，
 
 ## WALA导入
 
-wala的导入和简单实用可以参考[这篇文章](https://blog.csdn.net/weixin_45642882/article/details/110891528?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522163784367516780255211239%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=163784367516780255211239&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~blog~sobaiduend~default-2-110891528.pc_v2_rank_blog_default&utm_term=WALA%E5%85%A5%E9%97%A8&spm=1018.2226.3001.4450)，应该是我院某届的学长留下的文章哈哈哈哈，里面大部分内容都可以直接借鉴，有些小细节我会在下面强调。
+wala的导入和简单实用可以参考[这篇文章](https://blog.csdn.net/weixin_45642882/article/details/110891528?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522163784367516780255211239%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=163784367516780255211239&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~blog~sobaiduend~default-2-110891528.pc_v2_rank_blog_default&utm_term=WALA%E5%85%A5%E9%97%A8&spm=1018.2226.3001.4450)，应该是我院某届的学长留下的文章，里面大部分内容都可以直接借鉴，有些小细节我会在下面强调。
 
 可以通过 **maven的pom.xml文件配置** 以及 **手动下载并导入jar包** 这两种方式将wala的jar包导入到项目中。
 
@@ -84,7 +84,7 @@ private CallGraph createCallGraph(String targetClass) throws CallGraphBuilderCan
 
 2. 我们利用`AnalysisScope`类的`addClassFileToScope()`方法将我们需要分析的类的 **class** 文件加入到分析域中。
 
-3. 最后的几行代码用来生成类的层次关系和调用关系图，具体的方法含义我也没咋搞懂哈哈哈哈，反正照着抄就完事了。
+3. 最后的几行代码用来生成类的层次关系和调用关系图，具体的方法含义我也没咋搞懂哈哈哈，反正照着抄就完事了。
 
    注意：参考[这篇文章](https://blog.csdn.net/xiyi5609/article/details/79092537?spm=1001.2014.3001.5501)，这里`Util.makeZeroOneContainerCFABuilder()`方法可以用`Util.makeNCFABuilder()`、`Util.makeZeroCFABuilder()`和`Util.makeZeroOneCFABuilder()`方法替代，不同的只是代码分析的粒度，我在使用的时候没感觉出来有啥太大的区别。
 
@@ -123,6 +123,36 @@ public void ateDefUseMatrix(String targetClass) throws IOException, WalaExceptio
 
 这样学习虽然听上去效率不高不过已经算是最有效的方法了，毕竟没有官方文档的情况下各种类和方法的使用基本只能靠猜测哈哈哈哈哈。
 
+PS：由于我要复现的工具主要涉及到方法中变量的定义和使用关系，我下面关于`CGNode`类的使用介绍主要也是针对这一方面。
+
+### `CGNode`类
+
+* `getMethod()`获取当前node代表的方法
+* `getDU()`获取当前方法中所有局部变量的定义使用关系
+* `getIR()`获取当前方法的代码在编译的过程中形成的中间表示(类似于LLVM中的IR，感兴趣的同学可以去学习一下LLVM及其相关内容)
+
+### `IR`类
+
+`IR类`中最主要的部分就是对代码的中间表示，大概形式如下图所示：
+
+![](images/instructions.png)
+
+我们可以通过`IR.getInstructions()`方法获取IR拥有的指令数组。
+
+上面指令中的每一个数字都代表着一个变量，那么我们要怎么获取到这些编号对应的变量名字呢？
+
+我们利用`IR.getLocalNames()`方法来实现变量编号到变量名称的转换。这个方法有两个参数，第一个参数是指令的索引(即第几条指令)，第二个参数就是变量的编号。这个方法有一个有趣的地方，就是前面的指令中出现过的变量编号在后续指令中也能够解析出来，所以我们传参的时候第一个参数可以固定为最后一条指令的索引，也就是`指令数量 - 1`。
+
+除此之外，我们可以通过`IR.getSymbolTable()`方法获取目标方法中所有的字面量的值。
+
+### `DefUse`类
+
+`DefUse`类记录方法中所有变量之间的定义使用关系。
+
+那么什么是定义使用关系呢？例如对于语句`int z = f(x, y)`，就有变量z的定义使用了变量x和y，从而这三者具有定义使用关系。
+
+我们可以通过`DefUse.getDef()`获取定义了某个变量的指令，通过`DefUse.getUses()`获取使用了某个变量的指令数组，这两个方法的参数均为变量的编号。我们再进一步根据同一条指令对应的定义变量和使用变量确定各个变量之间的定义使用关系。
+
 
 
 ## 学习♂资料
@@ -151,7 +181,7 @@ public void ateDefUseMatrix(String targetClass) throws IOException, WalaExceptio
 
 * [WALA之源代码生成调用关系图](https://blog.csdn.net/xiexie1357/article/details/88726572)，介绍了使用wala调用关系图的流程。
 
-* [WALA 代码实例](https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&ch=&tn=88093251_92_hao_pg&bar=&wd=%E7%B1%BB%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B+%E6%9C%AC%E6%96%87%E6%95%B4%E7%90%86%E6%B1%87%E6%80%BB%E4%BA%86Java%E4%B8%ADcom.ibm.wala&oq=%25E7%25B1%25BB%25E4%25BB%25A3%25E7%25A0%2581%25E7%25A4%25BA%25E4%25BE%258B%2520%25E6%259C%25AC%25E6%2596%2587%25E6%2595%25B4%25E7%2590%2586%25E6%25B1%2587%25E6%2580%25BB%25E4%25BA%2586Java%25E4%25B8%25ADcom.ibm.wala.&rsv_pq=aa1804db002ff193&rsv_t=e1a4QKaYiFMCjsqFB4yk0HcMrV07YrEDeUDDAfmJ9eJNjM9DEvhTvRSRsNO7ijVCLJKO1nxkCdzb&rqlang=cn&rsv_enter=1&rsv_btype=t&rsv_dl=tb&inputT=263)，最后这个是我在查资料的过程中发现的一个叫纯净天空的宝藏网站，里面记录了Java各种类的代码示例，虽然没有注释，不过能通过代码片段加深对于方法的理解。唯一不足的就是这个网站自己的搜索功能比较拉跨，所以需要借助搜索引擎的搜索功能，在百度或者Google输入关键字`类代码示例 本文整理汇总了Java中com.ibm.wala`获取wala相关类的代码示例。
+* [WALA 代码实例](https://www.baidu.com/s?ie=utf-8&f=8&rsv_bp=1&ch=&tn=88093251_92_hao_pg&bar=&wd=%E7%B1%BB%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B+%E6%9C%AC%E6%96%87%E6%95%B4%E7%90%86%E6%B1%87%E6%80%BB%E4%BA%86Java%E4%B8%ADcom.ibm.wala&oq=%25E7%25B1%25BB%25E4%25BB%25A3%25E7%25A0%2581%25E7%25A4%25BA%25E4%25BE%258B%2520%25E6%259C%25AC%25E6%2596%2587%25E6%2595%25B4%25E7%2590%2586%25E6%25B1%2587%25E6%2580%25BB%25E4%25BA%2586Java%25E4%25B8%25ADcom.ibm.wala.&rsv_pq=aa1804db002ff193&rsv_t=e1a4QKaYiFMCjsqFB4yk0HcMrV07YrEDeUDDAfmJ9eJNjM9DEvhTvRSRsNO7ijVCLJKO1nxkCdzb&rqlang=cn&rsv_enter=1&rsv_btype=t&rsv_dl=tb&inputT=263)，最后这个是我在查资料的过程中发现的一个叫纯净天空的网站，里面记录了Java各种类的代码示例，虽然没有注释，不过能通过代码片段加深对于方法的理解。唯一不足的就是这个网站自己的搜索功能比较拉跨，所以需要借助搜索引擎的搜索功能，在百度或者Google输入关键字`类代码示例 本文整理汇总了Java中com.ibm.wala`获取wala相关类的代码示例。
 
 
 

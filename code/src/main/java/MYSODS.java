@@ -39,11 +39,10 @@ public class MYSODS {
         AllApplicationEntrypoints entrypoints = new AllApplicationEntrypoints(scope, hierarchy);
         AnalysisOptions options = new AnalysisOptions(scope, entrypoints);
         SSAPropagationCallGraphBuilder builder = Util.makeZeroOneContainerCFABuilder(options, new AnalysisCacheImpl(), hierarchy, scope);
-        CallGraph graph = builder.makeCallGraph(options, null);
-        return graph;
+        return builder.makeCallGraph(options, null);
     }
 
-    public HashMap<String, List> createDefUseMatrix(String targetClass) throws IOException, WalaException, IllegalArgumentException, InvalidClassFileException, com.ibm.wala.util.CancelException {
+    private HashMap<String, List> createDefUseMatrix(String targetClass) throws IOException, WalaException, IllegalArgumentException, InvalidClassFileException, com.ibm.wala.util.CancelException {
         // 返回值为每个函数对应的变量名数组以及变量之间的调用关系矩阵
         CallGraph graph = createCallGraph(targetClass);
         HashMap<String, List> result = new HashMap<>();
@@ -55,7 +54,7 @@ public class MYSODS {
                 if ("Application".equals(method.getDeclaringClass().getClassLoader().toString())) {
                     IR ir = node.getIR();
                     SSAInstruction[] instructions = ir.getInstructions();
-                    DefUse du = node.getDU();
+                    int n = instructions.length;
                     HashMap<Integer, HashSet<Integer>> useMap = new HashMap<>();
                     // 对于每一条IR指令，我们获取相应的def-use对，此时变量还是以虚拟编号的形式存在
                     for (SSAInstruction ssaInstruction : instructions) {
@@ -89,8 +88,6 @@ public class MYSODS {
                         }
                     }
 
-                    int n = instructions.length;
-                    // System.out.println(useMap);
                     // 我们对所有的有名字的变量的编号进行重新排序
                     HashMap<Integer, Integer> varIndexMap = new HashMap<>();
                     int cnt = 0;
@@ -107,7 +104,7 @@ public class MYSODS {
                             }
                         }
                     }
-                    // System.out.println(varIndexMap);
+
                     // vars记录按照上面编号排序的变量名字
                     // dus记录各个有名字的变量之间的def-use关系
                     String[] vars = new String[cnt];
@@ -136,8 +133,6 @@ public class MYSODS {
                             }
                         }
                     }
-                    // System.out.println(Arrays.toString(vars));
-                    // System.out.println(Arrays.deepToString(dus));
                     result.put(method.toString(), new ArrayList());
                     result.get(method.toString()).add(vars);
                     result.get(method.toString()).add(dus);
@@ -147,7 +142,7 @@ public class MYSODS {
         return result;
     }
 
-    private int[][] multply(int[][] a, int[][] b) {
+    private int[][] multiply(int[][] a, int[][] b) {
         int m = a.length, r = b.length, n = b[0].length;
         int[][] result = new int[m][n];
         for (int i = 0; i < m; ++i) {
@@ -170,14 +165,16 @@ public class MYSODS {
         int[][] result = new int[n][n];
         for (int i = 0; i < n; ++i) result[i][i] = 1;
         while (n > 0) {
-            if (n % 2 == 1) result = multply(result, matrix);
-            else matrix = multply(matrix, matrix);
+            if (n % 2 == 1) result = multiply(result, matrix);
+            else matrix = multiply(matrix, matrix);
             n >>= 1;
         }
         return result;
     }
 
-    private String[] selectOracleData(String targetClass, String targetMethod, int m) throws WalaException, CancelException, InvalidClassFileException, IOException {
+    private String[] selectOracleData(String targetClass, String targetMethod, int m, int alpha, int choice) throws WalaException, CancelException, InvalidClassFileException, IOException {
+        // alpha用于确定路径中FOC传递的程度
+        // choice用于选择fp的值，0表示每个oracle数据具有动态的fp值，1表示使用统一的fp = 1
         HashMap<String, List> result = createDefUseMatrix(targetClass);
         String targetKey = "";
         for (String key : result.keySet()) {
@@ -185,19 +182,16 @@ public class MYSODS {
         }
         String[] vars = (String[])result.get(targetKey).get(0);
         int n = vars.length;
-        // int[][] dus = (int[][])result.get(targetKey).get(1);
+        int[][] dus = (int[][])result.get(targetKey).get(1);
 
         // 初始状态下所有已选oracle数据集为空，所有oracle数据的FOC均为0
         boolean[] selected = new boolean[n];
-        int[][] foc = calculateClosure((int[][])result.get(targetKey).get(1));
+        int[][] foc;
+        if (alpha == 1) foc = calculateClosure(dus);
+        else foc = dus;
         int[] FOC = new int[n];
         int[] fp = new int[n];
-        int FP = 0;
-//        for (int i = 0; i < n; ++i) {
-//            selected[i] = false;
-//            FOC[i] = 0;
-//            fp[i] = 0;
-//        }
+        int FP = 1;
         // 计算所有oracle数据的FOC值
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
@@ -209,8 +203,8 @@ public class MYSODS {
         // 选出故障检测能力最大的m个oracle数据集
         String[] data = new String[m];
         for (int i = 0; i < m; ++i) {
-            int maxFOC = 0, idx = 0;
-            // 挑选出未被选择数据中FOC值最大的oracle数据k
+            int maxFOC = 0, idx = -1;
+            // 挑选出未被选择数据中FOC值最大的oracle数据idx
             for (int j = 0; j < n; ++j) {
                 if (selected[j]) continue;
                 if (FOC[j] > maxFOC) {
@@ -218,14 +212,21 @@ public class MYSODS {
                     idx = j;
                 }
             }
+            // idx == -1意味着之前已选择的oracle数据能够覆盖到所有的变量
+            if (idx == -1) {
+                data[i] = null;
+                continue;
+            }
             selected[idx] = true;
             FOC[idx] = 0;
             // 对于数据idx所能检测到故障的数据W，消除W对于其他数据FOC值的影响
             // fp测量选定oracle数据对未选定oracle数据的影响
             for (int j = 0; j < n; ++j) {
                 if (foc[idx][j] == 0) continue;
-                fp[j] += foc[idx][j];
-                FP = fp[j];
+                if (choice == 0) {
+                    fp[j] += foc[idx][j];
+                    FP = fp[j];
+                }
                 for (int s = 0; s < n; ++s) {
                     if (idx != s && foc[s][j] > 0 && !selected[s]) {
                         FOC[s] -= foc[s][j] * FP;
@@ -240,14 +241,13 @@ public class MYSODS {
 
     public static void main(String[] args) throws IOException, WalaException, IllegalArgumentException, InvalidClassFileException, ClassNotFoundException, com.ibm.wala.util.CancelException {
         MYSODS mysods = new MYSODS();
-        HashMap<String, List> data = mysods.createDefUseMatrix(TARGETPATH);
-        String[] Test1 = mysods.selectOracleData(TARGETPATH, "Test1", 3);
-        System.out.println(Arrays.toString(Test1));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test1", 3, 0, 1)));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test1", 3, 1, 1)));
 
-        String[] Test2 = mysods.selectOracleData(TARGETPATH, "Test2", 3);
-        System.out.println(Arrays.toString(Test2));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test2", 3, 0, 1)));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test2", 3, 1, 1)));
 
-        String[] Test3 = mysods.selectOracleData(TARGETPATH, "Test3", 3);
-        System.out.println(Arrays.toString(Test3));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test3", 3, 0, 1)));
+        System.out.println(Arrays.toString(mysods.selectOracleData(TARGETPATH, "Test3", 3, 1, 1)));
     }
 }
