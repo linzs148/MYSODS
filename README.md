@@ -8,7 +8,9 @@
 
 [工具理解PPT](https://docs.qq.com/slide/DZkJSbVhBeFRvaWVW)
 
-[工具展示视频](bilibili)
+[工具展示视频（bilibili）](https://www.bilibili.com/video/BV1DL4y1p7Xd/)
+
+[工具展示视频（百度云）](https://pan.baidu.com/s/14yCnvqMaPXaKPEK2zrOH3g) 提取码：b8lr
 
 
 
@@ -41,7 +43,7 @@ MYSODS
 │          Test.class
 └─resources
     │  Experiment Report.md // 实验报告
-    │  Experiment Report.pptx // 工具理解PPT
+    │  SODS.pptx // 工具理解PPT
     │  WALA Guide.md // WALA使用总结
     │  [ASE'16]Supporting_oracle_construction_via_static_analysis.pdf // 工具复现论文
     │  [TSE'14]The_Oracle_Problem_in_Software-A_Survey.pdf
