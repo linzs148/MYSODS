@@ -6,7 +6,7 @@
 
 [实验报告](https://github.com/linzs148/SODS/blob/main/resources/Experiment%20Report.md)
 
-[实验报告PPT](https://docs.qq.com/slide/DZkJSbVhBeFRvaWVW)
+[工具理解PPT](https://docs.qq.com/slide/DZkJSbVhBeFRvaWVW)
 
 [工具展示视频](bilibili)
 
@@ -41,7 +41,7 @@ MYSODS
 │          Test.class
 └─resources
     │  Experiment Report.md // 实验报告
-    │  Experiment Report.pptx // 实验报告PPT
+    │  Experiment Report.pptx // 工具理解PPT
     │  WALA Guide.md // WALA使用总结
     │  [ASE'16]Supporting_oracle_construction_via_static_analysis.pdf // 工具复现论文
     │  [TSE'14]The_Oracle_Problem_in_Software-A_Survey.pdf
