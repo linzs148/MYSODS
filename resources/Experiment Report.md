@@ -1,6 +1,6 @@
 # 预言数据选择工具SODS复现
 
-[Supporting Oracle Construction Via Static Analysis](https://github.com/linzs148/MYSODS/blob/main/resources/%5BASE'16%5DSupporting_预言_construction_via_static_analysis.pdf)
+[Supporting Oracle Construction Via Static Analysis](https://github.com/linzs148/MYSODS/blob/main/resources/%5BASE'16%5DSupporting_oracle_construction_via_static_analysis.pdf)
 
 **（由于论文没有提供源码，WALA的使用也没什么教程，更没有系统性学过程序分析，所以复现的程度十分有限，希望助教能够多给点分呜呜呜）**
 
